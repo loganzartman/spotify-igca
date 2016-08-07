@@ -25,6 +25,7 @@ var SpotifyIGCA = function(clientID, scopes){
 		this.invalidateState();
 	}
 };
+SpotifyIGCA.DEBUG = true; //enables logging
 
 SpotifyIGCA.prototype.getAccessToken = function() {
 	if (this.ready) return this.accessToken;
@@ -45,7 +46,7 @@ SpotifyIGCA.prototype.init = function() {
 		}
 		//the auth info is invalid
 		else {
-			console.log("Bad auth info, checking for stored token.");
+			SpotifyIGCA.log("Bad auth info, checking for stored token.");
 		}
 	}
 
@@ -57,11 +58,11 @@ SpotifyIGCA.prototype.init = function() {
 		}
 		//the stored token is invalid
 		else {
-			console.log("Stored token invalid.");
+			SpotifyIGCA.log("Stored token invalid.");
 		}
 	}
 
-	console.log("No stored token, need to reAuth().");
+	SpotifyIGCA.log("No stored token, need to reAuth().");
 	return false;
 };
 
@@ -109,7 +110,7 @@ SpotifyIGCA.prototype.parseHash = function(hashString) {
 
 	//check error
 	if ("error" in data) {
-		console.log(data.error);
+		SpotifyIGCA.log(data.error);
 		return false;
 	}
 
@@ -126,7 +127,7 @@ SpotifyIGCA.prototype.parseHash = function(hashString) {
 		return this.loadStoredToken();
 	}
 	else {
-		console.log("unknown error");
+		SpotifyIGCA.log("unknown error");
 		return false;
 	}
 };
@@ -151,13 +152,13 @@ SpotifyIGCA.prototype.isExpired = function() {
 SpotifyIGCA.prototype.loadStoredToken = function() {
 	var token = window.localStorage.getItem("igca_access_token");
 	if (token === null) {
-		console.log("tried to load token, but none found.");
+		SpotifyIGCA.log("tried to load token, but none found.");
 		return false;
 	}
 
 	//check for expiration
 	if (this.isExpired()) {
-		console.log("token expired.");
+		SpotifyIGCA.log("token expired.");
 		return false;
 	}
 
@@ -188,6 +189,10 @@ SpotifyIGCA.prototype.invalidateAuth = function() {
 	window.localStorage.removeItem("igca_access_token");
 	this.accessToken = null;
 	this.ready = false;
+};
+
+SpotifyIGCA.log = function(s){
+	if (SpotifyIGCA.DEBUG) console.log(s);
 };
 
 /**
