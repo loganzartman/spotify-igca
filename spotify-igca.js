@@ -25,6 +25,14 @@ var SpotifyIGCA = function(clientID, scopes){
 		this.invalidateState();
 	}
 };
+
+/**
+ * Defines a minimum remaining time in seconds until access token expiration.
+ * Set to 0 to wait until the token expires.
+ * Set to -1 to refresh the token every time instead of loading it.
+ */
+SpotifyIGCA.MIN_TOKEN_LIFE = 1800;
+
 SpotifyIGCA.DEBUG = true; //enables logging
 
 SpotifyIGCA.prototype.getAccessToken = function() {
@@ -124,7 +132,7 @@ SpotifyIGCA.prototype.parseHash = function(hashString) {
 		window.localStorage.setItem("igca_expires_on", expiresOn);
 		
 		window.location.hash = "";
-		return this.loadStoredToken();
+		return this.loadStoredToken(true);
 	}
 	else {
 		SpotifyIGCA.log("unknown error");
@@ -137,8 +145,13 @@ SpotifyIGCA.prototype.parseHash = function(hashString) {
  */
 SpotifyIGCA.prototype.isExpired = function() {
 	if (window.localStorage.getItem("igca_access_token") === null) return true;
-	var expiresOn = window.localStorage.getItem("igca_expires_on");
-	if (parseInt(expiresOn) <= Date.now()) {
+	var expiresOn = parseInt(window.localStorage.getItem("igca_expires_on"));
+	if (SpotifyIGCA.MIN_TOKEN_LIFE >= 0) {
+		if (expiresOn - SpotifyIGCA.MIN_TOKEN_LIFE*1000 <= Date.now()) {
+			return true;
+		}
+	}
+	else {
 		return true;
 	}
 	return false;
@@ -149,7 +162,7 @@ SpotifyIGCA.prototype.isExpired = function() {
  * Returns true if successful, false otherwise.
  * @returns {Boolean} success
  */
-SpotifyIGCA.prototype.loadStoredToken = function() {
+SpotifyIGCA.prototype.loadStoredToken = function(skipExpirationCheck) {
 	var token = window.localStorage.getItem("igca_access_token");
 	if (token === null) {
 		SpotifyIGCA.log("tried to load token, but none found.");
@@ -157,7 +170,7 @@ SpotifyIGCA.prototype.loadStoredToken = function() {
 	}
 
 	//check for expiration
-	if (this.isExpired()) {
+	if (this.isExpired() && !skipExpirationCheck) {
 		SpotifyIGCA.log("token expired.");
 		return false;
 	}
