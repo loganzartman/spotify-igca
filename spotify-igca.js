@@ -1,4 +1,6 @@
 /**
+ * Spotify implicit grant client authentication
+ *
  * Utility for obtaining Access Token using implicit grant flow.
  * See https://developer.spotify.com/web-api/authorization-guide/
  *
@@ -9,24 +11,18 @@
  *     the reAuth() method.  This will perform a redirect to the auth page.
  * 3b) If the init() method returns true, you can now use getAccessToken().
  *
- * @param clientID {String} client ID
- * @param scopes {Array} array of scope strings
+ * @param {String} clientID client ID
+ * @param {Array} scopes array of scope strings
  */
 var SpotifyIGCA = function(clientID, scopes){
 	this.clientID = clientID;
 	this.scopes = typeof scopes !== "object" ? [] : scopes;
 	this.ready = false;
 
-	//generate state value if none exits (invalidates any stored auth info)
+	//generate state value if none exits
 	this.stateKey = window.localStorage.getItem("igca_state_key");
 	if (this.stateKey === null) {
-		//todo: less janky
-		var stateKey = "";
-		for (var i=0; i<16; i++) {
-			stateKey += String.fromCharCode(Math.floor(Math.random()*26+65));
-		}
-		window.localStorage.setItem("igca_state_key", stateKey);
-		this.stateKey = stateKey;
+		this.invalidateState();
 	}
 };
 
@@ -102,8 +98,10 @@ SpotifyIGCA.prototype.parseHash = function(hashString) {
 	});
 
 	//check state key
-	//!!!!!!!!!!! Sometimes key is not sent, fix. !!!!!!!!!!!!!!!!!!
-	//if (data.state !== this.stateKey) return false;
+	if (data.state !== this.stateKey) {
+		this.invalidateState();
+		return false;
+	}	
 
 	//check error
 	if ("error" in data) {
@@ -165,9 +163,33 @@ SpotifyIGCA.prototype.loadStoredToken = function() {
 };
 
 /**
+ * Regenerates state key.
+ * If this is performed before a hash is parsed, the hash data is not accepted.
+ * (the state received in the hash must match the stored state.)
+ */
+SpotifyIGCA.prototype.invalidateState = function() {
+	//todo: less janky
+	var stateKey = "";
+	for (var i=0; i<16; i++) {
+		stateKey += String.fromCharCode(Math.floor(Math.random()*26+65));
+	}
+	window.localStorage.setItem("igca_state_key", stateKey);
+	this.stateKey = stateKey;
+};
+
+/**
+ * Remove the access key from storage, and require reauth.
+ */
+SpotifyIGCA.prototype.invalidateAuth = function() {
+	window.localStorage.removeItem("igca_access_token");
+	this.accessToken = null;
+	this.ready = false;
+};
+
+/**
  * Compile a URL with given query parameters
- * @param url {String} url
- * @param params {Object} a key->value map to convert to GET parameters.
+ * @param {String} url url
+ * @param {Object} params a key->value map to convert to GET parameters.
  *        ex: {key1: "val1", key2: "val2"}
  */
 SpotifyIGCA.makeQuery = function(url, params) {
@@ -182,10 +204,10 @@ SpotifyIGCA.makeQuery = function(url, params) {
 
 /**
  * Make an HTTP GET request to the given URL, and call callback when done.
- * @param url {String} url
- * @param callback {Function} complete callback, which accepts a response
+ * @param {String} url url
+ * @param {Function} callback complete callback, which accepts a response
  *        parameter.
- * @param params {Object} a key->value map to convert to GET parameters.
+ * @param {Object} params a key->value map to convert to GET parameters.
  *        ex: {key1: "val1", key2: "val2"}
  */
 SpotifyIGCA.httpGet = function(url, callback, params) {
