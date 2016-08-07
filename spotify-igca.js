@@ -211,12 +211,14 @@ SpotifyIGCA.makeQuery = function(url, params) {
  *        ex: {key1: "val1", key2: "val2"}
  */
 SpotifyIGCA.httpGet = function(url, callback, params) {
-	url = SpotifyIGCA.makeQuery(url, params);
+	if (typeof params !== "undefined")
+		url = SpotifyIGCA.makeQuery(url, params);
 
 	//send request
 	var req = new XMLHttpRequest();
-	req.addEventListener("load", function(){
+	req.onload = function(){
 		callback(req.response);
-	}, false);
+	};
 	req.open("GET", url);
+	req.send();
 };
