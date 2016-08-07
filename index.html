@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Implicit grant demo</title>
+	<script src="spotify-igca.js"></script>
+</head>
+<body>
+	<script>
+		var auth = new SpotifyIGCA("dde146c2f49d460ebdcc7b00adb31e10");
+		var success = auth.init();
+
+		if (success) {
+			//authentication is complete!
+			alert("User authenticated!\n" + auth.getAccessToken());
+		}
+		else {
+			//user needs authentication!
+			setTimeout(function(){
+				auth.reAuth();
+			}, 500);
+		}
+	</script>
+</body>
+</html>
