@@ -70,10 +70,12 @@ SpotifyIGCA.prototype.init = function() {
  */
 SpotifyIGCA.prototype.reAuth = function() {
 	//prepare an auth URL to send the user to
+	this.invalidateState();
+	var redir = window.location.href.substring(0, window.location.href.indexOf("#"));
 	var url = SpotifyIGCA.makeQuery("https://accounts.spotify.com/authorize", {
 		client_id: this.clientID,
 		response_type: "token",
-		redirect_uri: window.location.href,
+		redirect_uri: redir,
 		state: this.stateKey,
 		scope: this.scopes.join(" ")
 	});
